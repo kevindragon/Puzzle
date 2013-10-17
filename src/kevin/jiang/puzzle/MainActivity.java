@@ -10,21 +10,25 @@ import android.util.Log;
 //import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
+import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.TextView;
 //import android.widget.LinearLayout;
-//import android.view.Window;
+import android.view.Window;
 
 public class MainActivity extends Activity implements OnTouchListener {
 	
 	private float xDown, yDown;
 	private boolean isShuffle = false;
+	private boolean gameOver = false;
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // 隐藏title
-        //requestWindowFeature(Window.FEATURE_NO_TITLE);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
 
         // 设置事件监听
@@ -68,6 +72,36 @@ public class MainActivity extends Activity implements OnTouchListener {
     		return;
     	}
     	int[] shu = generateRandomNumber();
+
+    	// 显示序列数
+    	String p = "";
+    	for (int i=0; i<shu.length; i++) {
+    		if (i == shu.length-1) {
+    			p += shu[i];
+    		} else {
+    			p += shu[i] + ", ";
+    		}
+    	}
+    	int inverseOrdinal;
+    	for (;;) {
+    		inverseOrdinal = 0;
+        	// 计算逆序数
+        	for (int i=0; i<shu.length; i++) {
+        		for (int j=i+1; j<shu.length; j++) {
+        			if (shu[i] > shu[j]) {
+        				inverseOrdinal += 1;
+        			}
+        		}
+        	}
+        	if (inverseOrdinal % 2 == 0) {
+        		break;
+        	} else {
+        		shu = generateRandomNumber();
+        	}
+    	}
+    	TextView tv = (TextView) findViewById(R.id.textView2);
+    	tv.setText(p + ", in: " + inverseOrdinal);
+
 Log.i("Puzzle", "shuffle PuzzlePosition.position [before]: \n" + xxDebug(PuzzlePosition.position));
     	for (int i=0; i<8; i++) {
     		// 打乱 position
@@ -84,6 +118,7 @@ Log.i("Puzzle", "shuffle PuzzlePosition.position [before]: \n" + xxDebug(PuzzleP
     	}
 Log.i("Puzzle", "shuffle PuzzlePosition.position [after]: \n" + xxDebug(PuzzlePosition.position));
     	isShuffle = true;
+    	
     }
     
     public void setEventListene() {
@@ -98,6 +133,17 @@ Log.i("Puzzle", "shuffle PuzzlePosition.position [after]: \n" + xxDebug(PuzzlePo
     	ImageButton btn12 = (ImageButton) findViewById(R.id.imageButton12);
     	btn12.setTag(12);
     	btn12.setOnTouchListener(this);
+    	// 再来一局
+		Button newGameBtn = (Button) findViewById(R.id.button1);
+		newGameBtn.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if (gameOver) {
+					shuffle();
+					gameOver = false;
+				}
+			}
+		});
     }
 
 	@Override
@@ -181,11 +227,28 @@ Log.i("Puzzle", "PuzzlePosition.position [before]: \n" + xxDebug(PuzzlePosition.
 				PuzzlePosition.position[targetXY[0]][targetXY[1]] = swap;
 Log.i("Puzzle", "PuzzlePosition.position [after]: \n" + xxDebug(PuzzlePosition.position));
 			}
-			
+			if (isWin()) {
+				TextView tv = (TextView) findViewById(R.id.textView2);
+				tv.setText("我回来啦，亲一个。");
+				gameOver = true;
+				isShuffle = false;
+			}
 			break;
 		}
 		
 		return false;
+	}
+	
+	public boolean isWin() {
+		for (int i=0; i<3; i++) {
+			for (int j=0; j<3; j++) {
+				int pos = i*3 + j +1;
+				if (PuzzlePosition.position[i][j] != pos) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 public String xxDebug(int[][] c) {
